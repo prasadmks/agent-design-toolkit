@@ -1,73 +1,63 @@
 # Agent Design Toolkit
 
-A live tool for generating structured agent requirements from a user story.
-
-Paste a description of what you want your agent to do. Get back a complete working document covering seven dimensions of agent design — ready to hand to an engineering team.
+From user experience design to agentic system design — a live tool that translates a user story into a structured agent spec across seven dimensions.
 
 **Live tool:** [v0-agent-design-toolkit.vercel.app](https://v0-agent-design-toolkit.vercel.app)
 
 ---
 
-## What It Produces
+## The Problem
 
-| # | Section | Owner | What it defines |
-|---|---|---|---|
-| 1 | Requirement Interpretation | PM + Dev | Agent goal, scope, step-by-step flow, gap analysis |
-| 2 | Open Decisions | PM | Blocker questions that must be answered before build starts |
-| 3 | Knowledge Base Design | PM specifies · Data eng implements | What data the agent needs, where it lives, freshness requirements |
-| 4 | Memory Design | PM decides · Engineer implements | Session memory, cross-session persistence, what to retain vs. discard |
-| 5 | Tool Contracts | PM specifies · Engineer implements | Tool name, inputs/outputs, idempotency, failure handling |
-| 6 | Logging Schema | PM defines · Engineer builds | What to log, retention policy, alerting queries |
-| 7 | Eval Design | PM writes cases · QA implements | Happy path, edge cases, failure cases, adversarial cases |
+A user story defines what the system should do. It says nothing about how the agent underneath should reason, determine what needs to be loaded in memory, what happens when a tool call fails, or how its decisions get evaluated. That gap lives between product and engineering — and it's where most agentic projects lose definition.
+
+Most teams discover what they forgot to specify after the first production incident. This toolkit makes that layer explicit before build starts.
 
 ---
 
-## How To Use
+## How It Works
 
-1. Open the [live tool](https://v0-agent-design-toolkit.vercel.app)
-2. Enter your Anthropic API key (`sk-ant-...`)
-3. Describe what you want your agent to do — or pick one of the example chips
-4. Hit **Generate Spec** — output appears in under 30 seconds
+![Agent Design Toolkit Architecture](https://raw.githubusercontent.com/prasadmks/agent-design-toolkit/main/images/architecture.png)
 
-Your API key is used client-side only. It is never sent to any server other than Anthropic's API directly.
+Paste a user story. The toolkit generates a complete agent design spec across seven dimensions — each one a decision that typically gets resolved informally during sprint planning, or not at all.
 
----
-
-## Example Inputs
-
-- `Agent should process credit for internet outage`
-- `Agent should handle billing disputes end to end`
-- `Patients should reschedule appointments through the agent`
-- `Agent should help customers with flight disruptions`
-- `Agent handles product returns and refunds`
+| # | Dimension | Who owns it |
+|---|---|---|
+| 1 | Requirement Interpretation | PM + Engineering · confirm together |
+| 2 | Open Decisions | PM · answers before build starts |
+| 3 | Knowledge Base Design | PM specifies · Data eng implements |
+| 4 | Memory Design | PM decides · Engineer implements |
+| 5 | Tool Contracts | PM specifies · Engineer implements |
+| 6 | Logging Schema | PM defines · Engineer builds |
+| 7 | Eval Design | PM writes cases · QA implements |
 
 ---
 
-## Why This Exists
+## The Design Decision
 
-Writing requirements for non-deterministic systems is a different skill than writing requirements for deterministic software. An agent that "handles billing disputes" can mean ten different things depending on:
+Writing requirements for deterministic software is a solved problem. Writing requirements for an agent — something that reasons, fails unpredictably, and makes autonomous decisions — is not.
 
-- What confidence threshold triggers autonomous action vs. human review
-- What the agent does when a backend system is down
-- What it logs so you can reconstruct what happened after the fact
-- What your eval cases are before you ship
-
-This toolkit makes those decisions explicit before build starts — not after the first production incident.
-
-Built from the methodology used on Spectrum Aura — Charter's agentic AI platform serving 32M+ customers across 250M annual contacts.
+| | User Story | Agent Design Spec |
+|---|---|---|
+| Captures expected behavior | Yes | Yes |
+| Defines memory architecture | No | Yes |
+| Specifies tool contracts | No | Yes |
+| Sets confidence thresholds | No | Yes |
+| Defines fallback paths | No | Yes |
+| Includes eval cases | No | Yes |
 
 ---
 
-## Running Locally
+## What's In This Repo
 
-Single HTML file — no build step, no dependencies.
-
-```bash
-git clone https://github.com/prasadmks/agent-design-toolkit
-open index.html
+```
+agent-design-toolkit/
+├── README.md
+├── index.html        ← single-file tool, runs locally or via Vercel
+└── images/
+    └── architecture.png
 ```
 
-Enter your Anthropic API key in the toolbar and start generating specs.
+The entire tool is a single self-contained HTML file — no build step, no dependencies. Open it locally or deploy to any static host.
 
 ---
 
