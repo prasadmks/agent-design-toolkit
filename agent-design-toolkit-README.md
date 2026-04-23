@@ -4,7 +4,7 @@ A live tool for generating structured agent requirements from a user story.
 
 Paste a description of what you want your agent to do. Get back a complete working document covering seven dimensions of agent design — ready to hand to an engineering team.
 
-**Live tool:** [agent-design-toolkit.vercel.app](#) ← updated after Vercel deploy
+**Live tool:** [v0-agent-design-toolkit.vercel.app](https://v0-agent-design-toolkit.vercel.app)
 
 ---
 
@@ -24,7 +24,7 @@ Paste a description of what you want your agent to do. Get back a complete worki
 
 ## How To Use
 
-1. Open the [live tool](#) ← add Vercel URL after deploy
+1. Open the [live tool](https://v0-agent-design-toolkit.vercel.app)
 2. Enter your Anthropic API key (`sk-ant-...`)
 3. Describe what you want your agent to do — or pick one of the example chips
 4. Hit **Generate Spec** — output appears in under 30 seconds
