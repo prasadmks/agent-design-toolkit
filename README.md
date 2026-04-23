@@ -38,7 +38,7 @@ Paste a user story. The toolkit generates a complete agent design spec across se
 
 Writing requirements for deterministic software is a solved problem. Writing requirements for an agent — something that reasons, fails unpredictably, and makes autonomous decisions — is not.
 
-| | User Story | Agent Design Spec |
+| Characteristic | User Story | Agent Design Spec |
 |---|---|---|
 | Captures expected behavior | Yes | Yes |
 | Defines memory architecture | No | Yes |
