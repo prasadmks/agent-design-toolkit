@@ -1,0 +1,924 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Agent Design Toolkit</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@300;400;500&family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg:#f7f6f2;
+  --surface:#ffffff;
+  --surface2:#f0ede8;
+  --border:#e0dbd2;
+  --border2:#c8c2b8;
+  --ink:#1a1714;
+  --ink2:#5a5550;
+  --ink3:#9a9590;
+  --accent:#b83a0a;
+  --accent-bg:#fdf0eb;
+  --green:#1e5c30;
+  --green-bg:#eaf4ee;
+  --green-bd:#9ecfaa;
+  --amber:#7a4e00;
+  --amber-bg:#fdf5e3;
+  --amber-bd:#e0c870;
+  --red:#8a1818;
+  --red-bg:#fdf0f0;
+  --red-bd:#e0b8b8;
+  --blue:#1a3d6a;
+  --blue-bg:#eaf0f8;
+  --blue-bd:#9ab8d8;
+  --purple:#3a1e6a;
+  --purple-bg:#f2eef8;
+  --purple-bd:#b8a0d8;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-serif;font-weight:300;font-size:14px;line-height:1.6;}
+
+/* NAV */
+.nav{background:var(--ink);padding:0 1.5rem;display:flex;align-items:center;justify-content:space-between;gap:1rem;position:sticky;top:0;z-index:100;flex-wrap:wrap;}
+.nav-brand{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:#f7f6f2;padding:.9rem 0;letter-spacing:-.01em;}
+.nav-brand em{color:#e05828;font-style:normal;}
+.nav-sub{font-family:'DM Mono',monospace;font-size:10px;color:#5a5550;padding:.9rem 0;}
+
+/* API BAR */
+.api-bar{background:var(--surface);border-bottom:1px solid var(--border);padding:.55rem 1.5rem;display:flex;align-items:center;gap:.75rem;flex-wrap:wrap;}
+.api-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;white-space:nowrap;}
+.api-bar input{flex:1;min-width:180px;max-width:320px;background:var(--bg);border:1px solid var(--border);color:var(--ink2);font-family:'DM Mono',monospace;font-size:11px;padding:.35rem .6rem;border-radius:3px;outline:none;}
+.api-bar input:focus{border-color:var(--border2);color:var(--ink);}
+.api-ind{font-family:'DM Mono',monospace;font-size:10px;display:flex;align-items:center;gap:.35rem;color:var(--ink3);}
+.api-dot{width:6px;height:6px;border-radius:50%;background:var(--border);transition:background .2s;}
+.api-ind.ok .api-dot{background:#3a9a50;}
+.api-ind.ok{color:var(--green);}
+
+/* WRAP */
+.wrap{max-width:800px;margin:0 auto;padding:1.5rem 1.5rem 4rem;}
+
+/* INPUT CARD */
+.input-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem;margin-bottom:1.5rem;}
+.input-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.1em;margin-bottom:.5rem;display:block;}
+.input-card textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--ink);font-family:'Lora',serif;font-size:15px;font-style:italic;padding:.75rem .875rem;border-radius:4px;resize:vertical;outline:none;min-height:72px;line-height:1.6;}
+.input-card textarea::placeholder{color:var(--ink3);}
+.input-card textarea:focus{border-color:var(--border2);}
+.chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:.6rem;}
+.chip{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);border:1px solid var(--border);background:transparent;padding:3px 8px;border-radius:20px;cursor:pointer;transition:all .12s;}
+.chip:hover{border-color:var(--accent);color:var(--accent);}
+.input-footer{display:flex;justify-content:flex-end;align-items:center;gap:.75rem;margin-top:.75rem;}
+.hint{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);}
+.run-btn{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;background:var(--ink);color:var(--bg);border:none;padding:.55rem 1.25rem;border-radius:4px;cursor:pointer;display:flex;align-items:center;gap:.5rem;transition:opacity .15s;letter-spacing:.02em;}
+.run-btn:hover{opacity:.82;}
+.run-btn:disabled{opacity:.3;cursor:not-allowed;}
+.spinner{width:10px;height:10px;border:1.5px solid rgba(247,246,242,.3);border-top-color:var(--bg);border-radius:50%;animation:spin .7s linear infinite;display:none;}
+.run-btn.loading .spinner{display:block;}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ERROR */
+.err-box{background:var(--red-bg);border:1px solid var(--red-bd);border-radius:4px;padding:.65rem .875rem;font-family:'DM Mono',monospace;font-size:11px;color:var(--red);margin-bottom:1rem;display:none;}
+.err-box.show{display:block;}
+
+/* RESULTS */
+.results{display:none;}
+.results.show{display:block;}
+
+/* SECTION */
+.section{margin-bottom:1rem;border:1px solid var(--border);border-radius:8px;overflow:hidden;background:var(--surface);}
+
+.sec-head{padding:.75rem 1rem;background:var(--surface2);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;gap:1rem;}
+.sec-head-left{display:flex;align-items:center;gap:.625rem;}
+.sec-num{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);width:18px;height:18px;border:1px solid var(--border2);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.sec-title{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--ink);text-transform:uppercase;letter-spacing:.08em;}
+.sec-tag{font-family:'DM Mono',monospace;font-size:10px;padding:2px 7px;border-radius:10px;white-space:nowrap;}
+.tag-owner{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);}
+.tag-blocker{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);}
+.tag-dev{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-bd);}
+.tag-design{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);}
+
+.sec-body{padding:1rem;}
+
+/* INTERPRETATION */
+.interp-grid{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.75rem;}
+@media(max-width:560px){.interp-grid{grid-template-columns:1fr;}}
+.interp-cell{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:.65rem .75rem;}
+.ic-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem;}
+.ic-val{font-size:13px;color:var(--ink);line-height:1.4;}
+.ic-val.italic{font-style:italic;font-family:'Lora',serif;color:var(--ink2);}
+.step-list{display:flex;flex-direction:column;gap:4px;}
+.step-row{display:flex;gap:.6rem;padding:.45rem .6rem;background:var(--bg);border:1px solid var(--border);border-radius:3px;}
+.step-arrow{color:var(--ink3);flex-shrink:0;font-family:'DM Mono',monospace;font-size:10px;margin-top:2px;}
+.step-main{font-size:13px;color:var(--ink);line-height:1.4;}
+.step-note{font-size:11px;color:var(--ink3);margin-top:2px;font-family:'DM Mono',monospace;}
+.step-gap-note{font-size:12px;color:var(--ink2);line-height:1.45;margin-top:3px;padding:.3rem .5rem;background:var(--amber-bg);border-left:2px solid var(--amber-bd);border-radius:0 3px 3px 0;}
+
+/* DECISIONS */
+.decision-list{display:flex;flex-direction:column;gap:.625rem;}
+.decision-item{border:1px solid var(--border);border-radius:5px;overflow:hidden;}
+.di-head{display:flex;align-items:flex-start;gap:.625rem;padding:.65rem .75rem;background:var(--bg);}
+.di-blocker-badge{font-family:'DM Mono',monospace;font-size:9px;background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);padding:2px 5px;border-radius:3px;flex-shrink:0;margin-top:1px;white-space:nowrap;}
+.di-design-badge{font-family:'DM Mono',monospace;font-size:9px;background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);padding:2px 5px;border-radius:3px;flex-shrink:0;margin-top:1px;white-space:nowrap;}
+.di-question{font-size:13px;color:var(--ink);font-weight:400;line-height:1.4;flex:1;}
+.di-body{padding:.625rem .75rem;border-top:1px solid var(--border);}
+.di-why{font-size:12px;color:var(--ink2);line-height:1.5;margin-bottom:.5rem;}
+.di-options{display:flex;flex-direction:column;gap:3px;}
+.di-option{display:flex;gap:.5rem;font-size:12px;padding:.35rem .5rem;background:var(--surface2);border-radius:3px;}
+.di-opt-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);flex-shrink:0;min-width:14px;margin-top:1px;}
+.di-opt-text{color:var(--ink2);line-height:1.4;}
+.di-blank{margin-top:.5rem;font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);border-top:1px dashed var(--border);padding-top:.4rem;}
+
+/* KB */
+.kb-list{display:flex;flex-direction:column;gap:.625rem;}
+.kb-item{border:1px solid var(--border);border-radius:5px;overflow:hidden;}
+.kb-head{padding:.6rem .75rem;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:.5rem;}
+.kb-name{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;color:var(--ink);}
+.kb-type-badge{font-family:'DM Mono',monospace;font-size:9px;padding:2px 6px;border-radius:10px;background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);white-space:nowrap;}
+.kb-body{padding:.625rem .75rem;border-top:1px solid var(--border);}
+.kb-rows{display:flex;flex-direction:column;gap:4px;}
+.kb-row{display:flex;gap:.5rem;font-size:12px;}
+.kr-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);min-width:72px;flex-shrink:0;margin-top:1px;}
+.kr-val{color:var(--ink2);line-height:1.4;flex:1;}
+.kr-gap{color:var(--accent);}
+
+/* MEMORY */
+.mem-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:.5rem;}
+@media(max-width:560px){.mem-grid{grid-template-columns:1fr;}}
+.mem-card{background:var(--bg);border:1px solid var(--border);border-radius:5px;padding:.75rem;}
+.mem-type{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem;}
+.mem-what{font-size:12px;color:var(--ink);line-height:1.4;margin-bottom:.35rem;}
+.mem-spec{font-size:11px;color:var(--ink2);line-height:1.4;font-family:'DM Mono',monospace;margin-bottom:.35rem;}
+.mem-gap{font-size:11px;color:var(--accent);line-height:1.4;font-family:'DM Mono',monospace;}
+.mem-status{display:flex;align-items:center;gap:.3rem;font-family:'DM Mono',monospace;font-size:10px;margin-top:.4rem;}
+.ms-dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.ms-present .ms-dot{background:var(--green);} .ms-present{color:var(--green);}
+.ms-missing .ms-dot{background:var(--accent);} .ms-missing{color:var(--accent);}
+.ms-ambiguous .ms-dot{background:var(--amber);} .ms-ambiguous{color:var(--amber);}
+
+/* TOOL CONTRACTS */
+.tool-list{display:flex;flex-direction:column;gap:.75rem;}
+.tool-item{border:1px solid var(--border);border-radius:5px;overflow:hidden;}
+.tool-head{padding:.6rem .75rem;background:var(--bg);display:flex;align-items:center;justify-content:space-between;gap:.5rem;flex-wrap:wrap;}
+.tool-name{font-family:'DM Mono',monospace;font-size:12px;font-weight:500;color:var(--ink);}
+.tool-badges{display:flex;gap:4px;flex-wrap:wrap;}
+.tbadge{font-family:'DM Mono',monospace;font-size:9px;padding:2px 5px;border-radius:10px;}
+.tb-idem-y{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
+.tb-idem-n{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);}
+.tb-irrev{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);}
+.tb-type{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-bd);}
+.tool-body{padding:.75rem;border-top:1px solid var(--border);}
+.tool-section{margin-bottom:.625rem;}
+.tool-section:last-child{margin-bottom:0;}
+.ts-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.3rem;}
+.field-list{display:flex;flex-direction:column;gap:3px;}
+.field-row{display:flex;gap:.5rem;font-family:'DM Mono',monospace;font-size:11px;padding:.3rem .45rem;background:var(--bg);border-radius:3px;}
+.fr-name{color:var(--ink);min-width:140px;flex-shrink:0;}
+.fr-type{color:var(--blue);min-width:55px;flex-shrink:0;}
+.fr-note{color:var(--ink3);}
+.failure-list{display:flex;flex-direction:column;gap:3px;}
+.fail-row{display:flex;gap:.5rem;font-size:12px;padding:.3rem .45rem;background:var(--bg);border-radius:3px;}
+.fail-cond{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);min-width:80px;flex-shrink:0;margin-top:1px;}
+.fail-action{color:var(--ink2);line-height:1.4;}
+.fail-action.critical{color:var(--red);}
+
+/* LOGGING */
+.log-fields{display:flex;flex-direction:column;gap:3px;margin-bottom:.75rem;}
+.log-field{display:flex;gap:.5rem;font-family:'DM Mono',monospace;font-size:11px;padding:.3rem .45rem;background:var(--bg);border:1px solid var(--border);border-radius:3px;}
+.lf-name{color:var(--ink);min-width:160px;flex-shrink:0;}
+.lf-type{color:var(--blue);min-width:55px;flex-shrink:0;}
+.lf-note{color:var(--ink3);}
+.log-meta{display:grid;grid-template-columns:1fr 1fr;gap:.5rem;margin-bottom:.625rem;}
+@media(max-width:500px){.log-meta{grid-template-columns:1fr;}}
+.log-meta-cell{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:.5rem .6rem;}
+.lmc-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);margin-bottom:.25rem;}
+.lmc-val{font-size:12px;color:var(--ink);line-height:1.4;}
+.query-list{display:flex;flex-direction:column;gap:3px;}
+.query-row{display:flex;gap:.5rem;font-size:12px;padding:.3rem .45rem;background:var(--bg);border-radius:3px;}
+.qr-who{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);min-width:70px;flex-shrink:0;margin-top:1px;}
+.qr-q{color:var(--ink2);line-height:1.4;}
+
+/* EVALS */
+.eval-coverage{display:flex;align-items:center;gap:.625rem;margin-bottom:.875rem;padding:.6rem .75rem;background:var(--bg);border:1px solid var(--border);border-radius:4px;}
+.ec-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);}
+.ec-val{font-family:'DM Mono',monospace;font-size:11px;font-weight:500;}
+.ec-none{color:var(--red);}
+.ec-minimal{color:var(--red);}
+.ec-partial{color:var(--amber);}
+.ec-adequate{color:var(--green);}
+.ec-gap{font-size:12px;color:var(--ink2);flex:1;}
+
+.eval-section{margin-bottom:.75rem;}
+.eval-section-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem;display:flex;align-items:center;gap:.4rem;}
+.eval-priority-dot{width:6px;height:6px;border-radius:50%;flex-shrink:0;}
+.ep-must{background:var(--red);}
+.ep-should{background:var(--amber);}
+.ep-nice{background:var(--green);}
+.eval-case-list{display:flex;flex-direction:column;gap:.5rem;}
+.eval-case{border:1px solid var(--border);border-radius:4px;overflow:hidden;}
+.eval-case-head{padding:.5rem .65rem;background:var(--bg);display:flex;align-items:flex-start;gap:.5rem;}
+.ech-cat{font-family:'DM Mono',monospace;font-size:9px;padding:2px 5px;border-radius:10px;flex-shrink:0;margin-top:1px;}
+.cat-happy{background:var(--green-bg);color:var(--green);border:1px solid var(--green-bd);}
+.cat-edge{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-bd);}
+.cat-fail{background:var(--red-bg);color:var(--red);border:1px solid var(--red-bd);}
+.cat-adv{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-bd);}
+.ech-name{font-size:13px;color:var(--ink);line-height:1.35;flex:1;}
+.eval-case-body{padding:.5rem .65rem;border-top:1px solid var(--border);}
+.ecb-row{display:flex;gap:.5rem;font-size:12px;margin-bottom:3px;}
+.ecb-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);min-width:56px;flex-shrink:0;margin-top:1px;}
+.ecb-pass{color:var(--green);}
+.ecb-fail{color:var(--red);}
+.ecb-val{color:var(--ink2);line-height:1.4;}
+
+/* OPEN DECISIONS SECTION LABEL */
+.blocker-group{margin-bottom:.75rem;}
+.group-lbl{font-family:'DM Mono',monospace;font-size:10px;color:var(--ink3);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem;display:flex;align-items:center;gap:.4rem;}
+.gl-dot{width:6px;height:6px;border-radius:50%;}
+.gl-block{background:var(--red);}
+.gl-design{background:var(--amber);}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <div class="nav-brand">AI Agent <em>Design</em> Toolkit</div>
+  <div class="nav-sub">PM → Developer working document · v4</div>
+</div>
+
+<div class="api-bar">
+  <span class="api-lbl">Anthropic API Key</span>
+  <input type="password" id="apiKey" placeholder="sk-ant-..." />
+  <div class="api-ind" id="apiInd">
+    <div class="api-dot" id="apiDot"></div>
+    <span id="apiTxt">Not connected</span>
+  </div>
+</div>
+
+<div class="wrap">
+  <div class="input-card">
+    <label class="input-lbl">Describe what you want your agent to do</label>
+    <textarea id="req" placeholder="e.g. Agent should process credit for internet outage / handle billing disputes / reschedule patient appointments..."></textarea>
+    <div class="chips">
+      <button class="chip" onclick="fill('Agent should process credit for internet outage')">Service credit</button>
+      <button class="chip" onclick="fill('Agent should handle billing disputes end to end')">Billing dispute</button>
+      <button class="chip" onclick="fill('Patients should reschedule appointments through the agent')">Healthcare scheduling</button>
+      <button class="chip" onclick="fill('Agent should help customers with flight disruptions')">Flight disruptions</button>
+      <button class="chip" onclick="fill('Agent handles product returns and refunds')">Returns</button>
+      <button class="chip" onclick="fill('Help customers understand their monthly spending')">Spending insights</button>
+    </div>
+    <div class="input-footer">
+      <span class="hint">Ctrl+Enter to run</span>
+      <button class="run-btn" id="runBtn" onclick="run()">
+        <div class="spinner"></div>
+        <span>Generate Spec →</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="err-box" id="errBox"></div>
+
+  <div class="results" id="results">
+
+    <!-- S1: Interpretation -->
+    <div class="section" id="s1">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">1</div>
+          <div class="sec-title">Requirement Interpretation</div>
+        </div>
+        <span class="sec-tag tag-owner">PM + Dev · confirm together</span>
+      </div>
+      <div class="sec-body">
+        <div class="interp-grid" id="interpGrid"></div>
+        <div class="step-list" id="stepList"></div>
+      </div>
+    </div>
+
+    <!-- S2: Open Decisions -->
+    <div class="section" id="s2">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">2</div>
+          <div class="sec-title">Open Decisions</div>
+        </div>
+        <span class="sec-tag tag-blocker">PM answers before build starts</span>
+      </div>
+      <div class="sec-body" id="decisionsBody"></div>
+    </div>
+
+    <!-- S3: KB Design -->
+    <div class="section" id="s3">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">3</div>
+          <div class="sec-title">Knowledge Base Design</div>
+        </div>
+        <span class="sec-tag tag-design">PM specifies · Data eng implements</span>
+      </div>
+      <div class="sec-body">
+        <div class="kb-list" id="kbList"></div>
+      </div>
+    </div>
+
+    <!-- S4: Memory Design -->
+    <div class="section" id="s4">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">4</div>
+          <div class="sec-title">Memory Design</div>
+        </div>
+        <span class="sec-tag tag-design">PM decides · Engineer implements</span>
+      </div>
+      <div class="sec-body">
+        <div class="mem-grid" id="memGrid"></div>
+      </div>
+    </div>
+
+    <!-- S5: Tool Contracts -->
+    <div class="section" id="s5">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">5</div>
+          <div class="sec-title">Tool Contracts</div>
+        </div>
+        <span class="sec-tag tag-dev">PM specifies · Engineer implements</span>
+      </div>
+      <div class="sec-body">
+        <div class="tool-list" id="toolList"></div>
+      </div>
+    </div>
+
+    <!-- S6: Logging Schema -->
+    <div class="section" id="s6">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">6</div>
+          <div class="sec-title">Logging Schema</div>
+        </div>
+        <span class="sec-tag tag-dev">PM defines what matters · Engineer builds</span>
+      </div>
+      <div class="sec-body" id="logBody"></div>
+    </div>
+
+    <!-- S7: Eval Design -->
+    <div class="section" id="s7">
+      <div class="sec-head">
+        <div class="sec-head-left">
+          <div class="sec-num">7</div>
+          <div class="sec-title">Eval Design</div>
+        </div>
+        <span class="sec-tag tag-owner">PM writes cases · QA implements</span>
+      </div>
+      <div class="sec-body" id="evalBody"></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const SYSTEM = `You are a principal AI agent architect and product advisor. A PM gives you an agent requirement. You produce a complete, developer-ready specification document — adapted specifically to their requirement, domain, and implied context.
+
+You reason in sequence:
+1. Domain inference: what industry? what regulatory context? what failure patterns are domain-specific?
+2. Data conflict mapping: what sources does this imply? where can they contradict each other? what does the agent do when they conflict?
+3. Decision identification: what must be decided before build? which are hard blockers vs design choices?
+4. Scenario modeling: what are the 3-5 most specific failure scenarios for THIS requirement?
+5. Spec generation: minimum buildable specification for each component.
+
+Be specific to the requirement. Never generic. If the requirement implies healthcare, reason about HIPAA. If financial, reason about regulatory audit trails and idempotency. If telecom, reason about network data vs customer-reported data conflicts.
+
+Return ONLY valid JSON — no markdown, no explanation outside JSON:
+
+{
+  "interpretation": {
+    "as_stated": "exact user input",
+    "agent_type": "what kind of agent this is architecturally",
+    "domain": "inferred industry/domain",
+    "pattern": "Single Agent | Orchestrator+Subagent | Sequential Pipeline | Human-in-Loop Hybrid",
+    "pattern_reason": "one sentence why",
+    "irreversible_actions": "count and what they are",
+    "human_touchpoints": "defined | undefined | partial",
+    "steps": [
+      {"step": "string", "note": "string or null", "is_gap": false}
+    ]
+  },
+  "open_decisions": {
+    "blockers": [
+      {
+        "question": "specific question PM must answer — not generic",
+        "why_it_matters": "specific consequence of leaving this unanswered — what breaks in production",
+        "options": [
+          {"label": "A", "description": "option description", "tradeoff": "what this costs or risks"}
+        ]
+      }
+    ],
+    "design_decisions": [
+      {
+        "question": "specific design question",
+        "why_it_matters": "consequence",
+        "options": [
+          {"label": "A", "description": "string", "tradeoff": "string"}
+        ]
+      }
+    ]
+  },
+  "knowledge_base": [
+    {
+      "name": "source name",
+      "type": "structured | unstructured | API | database | document",
+      "retrieval_trigger": "proactive | reactive",
+      "trigger_reason": "why proactive or reactive for this specific source",
+      "granularity": "full-document | section | field-level",
+      "fields_needed": ["field1", "field2"],
+      "freshness": "real-time | minutes | hours | days",
+      "freshness_reason": "why this freshness for this source",
+      "fallback": "what agent does if source unavailable",
+      "gap": "specific gap or conflict risk — or null"
+    }
+  ],
+  "memory": {
+    "in_context": {
+      "carries": ["item1", "item2"],
+      "risk": "specific risk for this requirement",
+      "spec": "specific implementation note",
+      "status": "present | missing | ambiguous"
+    },
+    "external": {
+      "carries": ["item1", "item2"],
+      "lookback_window": "string",
+      "who_writes": "string",
+      "who_reads": "string",
+      "risk": "string",
+      "status": "present | missing | ambiguous"
+    },
+    "instructed": {
+      "carries": ["item1"],
+      "pm_decision": "specific decision PM needs to make about instructed memory",
+      "status": "present | missing | ambiguous"
+    }
+  },
+  "tool_contracts": [
+    {
+      "name": "tool_name",
+      "purpose": "one sentence",
+      "idempotent": true,
+      "irreversible": false,
+      "requires_confirmation": false,
+      "input_fields": [
+        {"name": "field_name", "type": "string", "note": "required | optional | description"}
+      ],
+      "output_fields": [
+        {"name": "field_name", "type": "string", "note": "description"}
+      ],
+      "failure_paths": [
+        {"condition": "on_null | on_timeout | on_error | on_duplicate | on_threshold_exceeded", "agent_action": "what agent does — specific"}
+      ],
+      "filtering_spec": "which fields to pass forward and which to drop",
+      "idempotency_spec": "how idempotency is implemented — or null"
+    }
+  ],
+  "logging_schema": {
+    "event_name": "string",
+    "fields": [
+      {"name": "field_name", "type": "string", "note": "why this field matters"}
+    ],
+    "retention": "string with regulatory reason if applicable",
+    "key_queries": [
+      {"who": "string", "query": "string"}
+    ],
+    "dedup_logic": "specific dedup query or rule"
+  },
+  "eval_design": {
+    "current_coverage": "NONE | MINIMAL | PARTIAL | ADEQUATE",
+    "coverage_gap": "one sentence",
+    "must_test": [
+      {
+        "case": "specific scenario name",
+        "category": "HAPPY PATH | EDGE CASE | FAILURE MODE | ADVERSARIAL",
+        "input": "what goes in",
+        "expected": "what should happen",
+        "pass_condition": "specific pass criteria",
+        "fail_signal": "what metric moves if this fails",
+        "references_decision": "which open decision this depends on — or null"
+      }
+    ],
+    "should_test": [
+      {
+        "case": "string",
+        "category": "string",
+        "what_to_measure": "string"
+      }
+    ]
+  }
+}
+
+Rules:
+- Every section must be specific to THIS requirement — never generic boilerplate
+- Open decisions must reference actual data conflicts or gaps in THIS requirement
+- Tool contracts must include field-level detail and all failure paths
+- Logging schema must include fields that serve compliance, PM measurement, and ops — not just debugging
+- Eval cases in must_test reference open decisions where applicable
+- Domain awareness: apply regulatory and industry-specific reasoning
+- No invented numbers or percentages`;
+
+function fill(t){ document.getElementById('req').value=t; }
+
+document.getElementById('apiKey').addEventListener('input',function(){
+  const k=this.value.trim();
+  const dot=document.getElementById('apiDot');
+  const ind=document.getElementById('apiInd');
+  const txt=document.getElementById('apiTxt');
+  if(k.startsWith('sk-ant-')&&k.length>20){
+    dot.style.background='#3a9a50';
+    ind.className='api-ind ok';
+    txt.textContent='Connected';
+  } else if(k.length>0){
+    dot.style.background='#b83a0a';
+    ind.className='api-ind';
+    txt.textContent='Invalid key';
+  } else {
+    dot.style.background='';
+    ind.className='api-ind';
+    txt.textContent='Not connected';
+  }
+});
+
+document.addEventListener('keydown',e=>{
+  if((e.ctrlKey||e.metaKey)&&e.key==='Enter') run();
+});
+
+function showErr(m){ const el=document.getElementById('errBox'); el.textContent=m; el.classList.add('show'); }
+function hideErr(){ document.getElementById('errBox').classList.remove('show'); }
+
+function sc(s){ return {present:'ms-present',missing:'ms-missing',ambiguous:'ms-ambiguous'}[s]||'ms-ambiguous'; }
+function st(s){ return {present:'Defined',missing:'Not defined',ambiguous:'Ambiguous'}[s]||'Unknown'; }
+function catCls(c){ return {HAPPY_PATH:'cat-happy','HAPPY PATH':'cat-happy',EDGE_CASE:'cat-edge','EDGE CASE':'cat-edge',FAILURE_MODE:'cat-fail','FAILURE MODE':'cat-fail',ADVERSARIAL:'cat-adv'}[c]||'cat-edge'; }
+function covCls(c){ return {NONE:'ec-none',MINIMAL:'ec-minimal',PARTIAL:'ec-partial',ADEQUATE:'ec-adequate'}[c]||'ec-partial'; }
+
+function renderResults(d){
+  // S1 Interpretation
+  const interp=d.interpretation||{};
+  const ig=document.getElementById('interpGrid');
+  ig.innerHTML=[
+    {l:'You wrote',v:`"${interp.as_stated||''}"`,cls:'italic'},
+    {l:'Agent type',v:interp.agent_type||'—'},
+    {l:'Domain',v:interp.domain||'—'},
+    {l:'Pattern',v:`${interp.pattern||'—'} — ${interp.pattern_reason||''}`},
+    {l:'Irreversible actions',v:interp.irreversible_actions||'None identified'},
+    {l:'Human touchpoints',v:interp.human_touchpoints||'Undefined'}
+  ].map(c=>`<div class="interp-cell"><div class="ic-lbl">${c.l}</div><div class="ic-val${c.cls?' '+c.cls:''}">${c.v}</div></div>`).join('');
+
+  const sl=document.getElementById('stepList');
+  sl.innerHTML=(interp.steps||[]).map(s=>`
+    <div class="step-row">
+      <span class="step-arrow">→</span>
+      <div>
+        <div class="step-main">${s.step}</div>
+        ${s.note?`<div class="step-note">${s.note}</div>`:''}
+        ${s.gap_note?`<div class="step-gap-note">${s.gap_note}</div>`:''}
+      </div>
+    </div>`).join('');
+
+  // S2 Open Decisions
+  const od=d.open_decisions||{};
+  const db=document.getElementById('decisionsBody');
+  let dHTML='';
+
+  const blockers=od.blockers||[];
+  const designs=od.design_decisions||[];
+
+  if(blockers.length){
+    dHTML+=`<div class="blocker-group">
+      <div class="group-lbl"><div class="gl-dot gl-block"></div>Blockers — build cannot start without these answers</div>
+      <div class="decision-list">${blockers.map(dec=>decHTML(dec,'blocker')).join('')}</div>
+    </div>`;
+  }
+  if(designs.length){
+    dHTML+=`<div class="blocker-group">
+      <div class="group-lbl"><div class="gl-dot gl-design"></div>Design decisions — answer at kickoff</div>
+      <div class="decision-list">${designs.map(dec=>decHTML(dec,'design')).join('')}</div>
+    </div>`;
+  }
+  db.innerHTML=dHTML;
+
+  // S3 KB
+  const kbl=document.getElementById('kbList');
+  kbl.innerHTML=(d.knowledge_base||[]).map(kb=>`
+    <div class="kb-item">
+      <div class="kb-head">
+        <span class="kb-name">${kb.name}</span>
+        <span class="kb-type-badge">${kb.type}</span>
+      </div>
+      <div class="kb-body">
+        <div class="kb-rows">
+          <div class="kb-row"><span class="kr-lbl">Trigger</span><span class="kr-val">${kb.retrieval_trigger} — ${kb.trigger_reason||''}</span></div>
+          <div class="kb-row"><span class="kr-lbl">Granularity</span><span class="kr-val">${kb.granularity}${kb.fields_needed&&kb.fields_needed.length?` — ${kb.fields_needed.join(', ')}`:''}</span></div>
+          <div class="kb-row"><span class="kr-lbl">Freshness</span><span class="kr-val">${kb.freshness} — ${kb.freshness_reason||''}</span></div>
+          <div class="kb-row"><span class="kr-lbl">Fallback</span><span class="kr-val">${kb.fallback||'Not defined'}</span></div>
+          ${kb.gap?`<div class="kb-row"><span class="kr-lbl kr-gap">Gap</span><span class="kr-val kr-gap">${kb.gap}</span></div>`:''}
+        </div>
+      </div>
+    </div>`).join('');
+
+  // S4 Memory
+  const mem=d.memory||{};
+  const mg=document.getElementById('memGrid');
+  const memDefs=[
+    {key:'in_context',label:'In-Context',carries:'carries',spec:'spec'},
+    {key:'external',label:'External',carries:'carries',spec:null},
+    {key:'instructed',label:'Instructed',carries:'carries',spec:null}
+  ];
+  mg.innerHTML=memDefs.map(mt=>{
+    const m=mem[mt.key]||{};
+    const items=(m.carries||[]).join(', ')||'—';
+    const extra=mt.key==='external'
+      ?`<div class="mem-spec">Lookback: ${m.lookback_window||'—'}</div><div class="mem-spec">Write: ${m.who_writes||'—'} · Read: ${m.who_reads||'—'}</div>`
+      :mt.key==='instructed'&&m.pm_decision
+      ?`<div class="mem-gap">Decision needed: ${m.pm_decision}</div>`
+      :mt.key==='in_context'&&m.spec
+      ?`<div class="mem-spec">${m.spec}</div>`
+      :'';
+    return `<div class="mem-card">
+      <div class="mem-type">${mt.label} Memory</div>
+      <div class="mem-what">${items}</div>
+      ${m.risk?`<div class="mem-gap">${m.risk}</div>`:''}
+      ${extra}
+      <div class="mem-status ${sc(m.status)}"><div class="ms-dot"></div>${st(m.status)}</div>
+    </div>`;
+  }).join('');
+
+  // S5 Tool Contracts
+  const tl=document.getElementById('toolList');
+  tl.innerHTML=(d.tool_contracts||[]).map(t=>`
+    <div class="tool-item">
+      <div class="tool-head">
+        <span class="tool-name">${t.name}</span>
+        <div class="tool-badges">
+          <span class="tbadge tb-type">${t.purpose}</span>
+          <span class="tbadge ${t.idempotent?'tb-idem-y':'tb-idem-n'}">${t.idempotent?'idempotent':'not idempotent'}</span>
+          ${t.irreversible?`<span class="tbadge tb-irrev">irreversible</span>`:''}
+          ${t.requires_confirmation?`<span class="tbadge tb-irrev">confirm before call</span>`:''}
+        </div>
+      </div>
+      <div class="tool-body">
+        <div class="tool-section">
+          <div class="ts-lbl">Input fields</div>
+          <div class="field-list">${(t.input_fields||[]).map(f=>`<div class="field-row"><span class="fr-name">${f.name}</span><span class="fr-type">${f.type}</span><span class="fr-note">${f.note||''}</span></div>`).join('')}</div>
+        </div>
+        <div class="tool-section">
+          <div class="ts-lbl">Output fields</div>
+          <div class="field-list">${(t.output_fields||[]).map(f=>`<div class="field-row"><span class="fr-name">${f.name}</span><span class="fr-type">${f.type}</span><span class="fr-note">${f.note||''}</span></div>`).join('')}</div>
+        </div>
+        <div class="tool-section">
+          <div class="ts-lbl">Failure paths</div>
+          <div class="failure-list">${(t.failure_paths||[]).map(f=>`<div class="fail-row"><span class="fail-cond">${f.condition}</span><span class="fail-action${f.condition.includes('duplicate')||f.condition.includes('error')?' critical':''}">${f.agent_action}</span></div>`).join('')}</div>
+        </div>
+        ${t.filtering_spec?`<div class="tool-section"><div class="ts-lbl">Filtering</div><div style="font-size:12px;color:var(--ink2);line-height:1.5">${t.filtering_spec}</div></div>`:''}
+        ${t.idempotency_spec?`<div class="tool-section"><div class="ts-lbl">Idempotency</div><div style="font-size:12px;color:var(--ink2);font-family:'DM Mono',monospace;line-height:1.5">${t.idempotency_spec}</div></div>`:''}
+      </div>
+    </div>`).join('');
+
+  // S6 Logging
+  const log=d.logging_schema||{};
+  const lb=document.getElementById('logBody');
+  lb.innerHTML=`
+    <div class="log-fields">${(log.fields||[]).map(f=>`<div class="log-field"><span class="lf-name">${f.name}</span><span class="lf-type">${f.type}</span><span class="lf-note">${f.note||''}</span></div>`).join('')}</div>
+    <div class="log-meta">
+      <div class="log-meta-cell"><div class="lmc-lbl">Event name</div><div class="lmc-val" style="font-family:'DM Mono',monospace">${log.event_name||'—'}</div></div>
+      <div class="log-meta-cell"><div class="lmc-lbl">Retention</div><div class="lmc-val">${log.retention||'—'}</div></div>
+      <div class="log-meta-cell"><div class="lmc-lbl">Dedup logic</div><div class="lmc-val" style="font-family:'DM Mono',monospace;font-size:11px">${log.dedup_logic||'—'}</div></div>
+    </div>
+    <div class="ts-lbl" style="margin-bottom:.4rem">Who queries what</div>
+    <div class="query-list">${(log.key_queries||[]).map(q=>`<div class="query-row"><span class="qr-who">${q.who}</span><span class="qr-q">${q.query}</span></div>`).join('')}</div>`;
+
+  // S7 Evals
+  const ev=d.eval_design||{};
+  const eb=document.getElementById('evalBody');
+  const mustTests=ev.must_test||[];
+  const shouldTests=ev.should_test||[];
+  eb.innerHTML=`
+    <div class="eval-coverage">
+      <span class="ec-lbl">Current coverage:</span>
+      <span class="ec-val ${covCls(ev.current_coverage)}">${ev.current_coverage||'—'}</span>
+      <span class="ec-gap">${ev.coverage_gap||''}</span>
+    </div>
+    ${mustTests.length?`
+    <div class="eval-section">
+      <div class="eval-section-lbl"><div class="eval-priority-dot ep-must"></div>Must test before launch</div>
+      <div class="eval-case-list">${mustTests.map(c=>`
+        <div class="eval-case">
+          <div class="eval-case-head">
+            <span class="ech-cat ${catCls(c.category)}">${c.category}</span>
+            <span class="ech-name">${c.case}</span>
+          </div>
+          <div class="eval-case-body">
+            <div class="ecb-row"><span class="ecb-lbl">Input</span><span class="ecb-val">${c.input||'—'}</span></div>
+            <div class="ecb-row"><span class="ecb-lbl">Expected</span><span class="ecb-val">${c.expected||'—'}</span></div>
+            <div class="ecb-row"><span class="ecb-lbl">Pass</span><span class="ecb-val ecb-pass">${c.pass_condition||'—'}</span></div>
+            <div class="ecb-row"><span class="ecb-lbl">Fail signal</span><span class="ecb-val ecb-fail">${c.fail_signal||'—'}</span></div>
+            ${c.references_decision?`<div class="ecb-row"><span class="ecb-lbl">Depends on</span><span class="ecb-val" style="color:var(--amber)">${c.references_decision}</span></div>`:''}
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`:''}
+    ${shouldTests.length?`
+    <div class="eval-section">
+      <div class="eval-section-lbl"><div class="eval-priority-dot ep-should"></div>Should test before launch</div>
+      <div class="eval-case-list">${shouldTests.map(c=>`
+        <div class="eval-case">
+          <div class="eval-case-head">
+            <span class="ech-cat ${catCls(c.category)}">${c.category}</span>
+            <span class="ech-name">${c.case}</span>
+          </div>
+          <div class="eval-case-body">
+            <div class="ecb-row"><span class="ecb-lbl">Measure</span><span class="ecb-val">${c.what_to_measure||'—'}</span></div>
+          </div>
+        </div>`).join('')}
+      </div>
+    </div>`:''}`;
+
+  document.getElementById('results').classList.add('show');
+  document.getElementById('s1').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function decHTML(dec,type){
+  const badge=type==='blocker'
+    ?`<span class="di-blocker-badge">BLOCKER</span>`
+    :`<span class="di-design-badge">DESIGN</span>`;
+  return `<div class="decision-item">
+    <div class="di-head">
+      ${badge}
+      <div class="di-question">${dec.question}</div>
+    </div>
+    <div class="di-body">
+      <div class="di-why">${dec.why_it_matters}</div>
+      ${(dec.options||[]).length?`<div class="di-options">${dec.options.map(o=>`
+        <div class="di-option">
+          <span class="di-opt-lbl">${o.label}</span>
+          <div class="di-opt-text"><strong style="color:var(--ink);font-weight:500">${o.description}</strong>${o.tradeoff?` — ${o.tradeoff}`:''}</div>
+        </div>`).join('')}</div>`:''}
+      <div class="di-blank">PM decision: ___________________________________</div>
+    </div>
+  </div>`;
+}
+
+function extractJSON(text){
+  // Strategy 1: strip code fences then parse
+  const stripped=text.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
+  try{ return JSON.parse(stripped); }catch(_){}
+  // Strategy 2: find outermost { } and parse that slice
+  const first=text.indexOf('{');
+  const last=text.lastIndexOf('}');
+  if(first!==-1&&last>first){
+    try{ return JSON.parse(text.slice(first,last+1)); }catch(_){}
+  }
+  // Strategy 3: null — caller will show raw for debug
+  return null;
+}
+
+async function run(){
+  hideErr();
+  const key=document.getElementById('apiKey').value.trim();
+  const req=document.getElementById('req').value.trim();
+  if(!key){ showErr('Enter your Anthropic API key above first.'); return; }
+  if(!req){ showErr('Please describe what you want your agent to do.'); return; }
+
+  const btn=document.getElementById('runBtn');
+  btn.disabled=true;
+  btn.classList.add('loading');
+  btn.querySelector('span').textContent='Analyzing…';
+  document.getElementById('results').classList.remove('show');
+
+  // Progress messages so user knows it's working
+  const msgs=['Reading requirement…','Mapping decisions…','Building KB & memory…','Building tool contracts…','Building eval cases…'];
+  let mi=0;
+  const ticker=setInterval(()=>{
+    mi=(mi+1)%msgs.length;
+    if(btn.querySelector('span')) btn.querySelector('span').textContent=msgs[mi];
+  },3000);
+
+  try{
+    const headers={
+      'Content-Type':'application/json',
+      'x-api-key':key,
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-direct-browser-access':'true'
+    };
+
+    // CALL 1: Interpretation + Decisions + KB + Memory
+    btn.querySelector('span').textContent='Reading requirement…';
+    const SYSTEM_A=`You are a principal AI agent architect. A PM gives you an agent requirement. Generate ONLY sections 1-4 of the spec as JSON. Be specific to the requirement and domain.
+
+Return ONLY this JSON structure, nothing else:
+{
+  "interpretation": {
+    "as_stated": "exact input",
+    "agent_type": "string",
+    "domain": "string",
+    "pattern": "Single Agent | Orchestrator+Subagent | Sequential Pipeline | Human-in-Loop Hybrid",
+    "pattern_reason": "one sentence",
+    "irreversible_actions": "string",
+    "human_touchpoints": "defined | undefined | partial",
+    "steps": [{"step":"string","note":"string or null","gap_note":"plain language explanation of what is undefined or missing at this step, and what decision resolves it — or null if nothing is missing"}]
+  },
+  "open_decisions": {
+    "blockers": [{"question":"specific question","why_it_matters":"specific production consequence","options":[{"label":"A","description":"string","tradeoff":"string"}]}],
+    "design_decisions": [{"question":"string","why_it_matters":"string","options":[{"label":"A","description":"string","tradeoff":"string"}]}]
+  },
+  "knowledge_base": [{"name":"string","type":"structured|unstructured|API|database|document","retrieval_trigger":"proactive|reactive","trigger_reason":"string","granularity":"full-document|section|field-level","fields_needed":["string"],"freshness":"real-time|minutes|hours|days","freshness_reason":"string","fallback":"string","gap":"string or null"}],
+  "memory": {
+    "in_context":{"carries":["string"],"risk":"string","spec":"string","status":"present|missing|ambiguous"},
+    "external":{"carries":["string"],"lookback_window":"string","who_writes":"string","who_reads":"string","risk":"string","status":"present|missing|ambiguous"},
+    "instructed":{"carries":["string"],"pm_decision":"string","status":"present|missing|ambiguous"}
+  }
+}`;
+
+    const res1=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers,
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2500,
+        system:SYSTEM_A,
+        messages:[{role:'user',content:`Requirement: "${req}"\n\nReturn ONLY the JSON object.`}]
+      })
+    });
+    if(!res1.ok){const e=await res1.json().catch(()=>({}));throw new Error(e.error?.message||`API error ${res1.status}`);}
+    const data1=await res1.json();
+    const part1=extractJSON(data1.content?.[0]?.text||'');
+    if(!part1){
+      const preview=(data1.content?.[0]?.text||'').slice(0,400).replace(/</g,'&lt;');
+      showErr(`Part 1 parse failed. Preview: ${preview}`);
+      return;
+    }
+
+    // CALL 2: Tool Contracts + Logging only
+    btn.querySelector('span').textContent='Building tool contracts…';
+    const SYSTEM_B=`You are a principal AI agent architect. Generate ONLY tool contracts and logging schema for this agent requirement as JSON. Be specific. Include field-level detail and all failure paths. Keep tool contracts to the 3-4 most critical tools only.
+
+Return ONLY this JSON, nothing else:
+{
+  "tool_contracts": [{"name":"string","purpose":"one sentence","idempotent":true,"irreversible":false,"requires_confirmation":false,"input_fields":[{"name":"string","type":"string","note":"string"}],"output_fields":[{"name":"string","type":"string","note":"string"}],"failure_paths":[{"condition":"string","agent_action":"string"}],"filtering_spec":"string","idempotency_spec":"string or null"}],
+  "logging_schema": {"event_name":"string","fields":[{"name":"string","type":"string","note":"string"}],"retention":"string","key_queries":[{"who":"string","query":"string"}],"dedup_logic":"string"}
+}`;
+
+    const res2=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers,
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2500,
+        system:SYSTEM_B,
+        messages:[{role:'user',content:`Requirement: "${req}"\n\nReturn ONLY the JSON object.`}]
+      })
+    });
+    if(!res2.ok){const e=await res2.json().catch(()=>({}));throw new Error(e.error?.message||`API error ${res2.status}`);}
+    const data2=await res2.json();
+    const part2=extractJSON(data2.content?.[0]?.text||'');
+    if(!part2){
+      const preview=(data2.content?.[0]?.text||'').slice(0,400).replace(/</g,'&lt;');
+      showErr(`Tool contracts parse failed. Preview: ${preview}`);
+      return;
+    }
+
+    // CALL 3: Eval Design only
+    btn.querySelector('span').textContent='Building eval cases…';
+    const SYSTEM_C=`You are a principal AI agent architect. Generate ONLY the eval design for this agent requirement as JSON. Be specific. Must-test cases should be the 4-5 highest-risk scenarios only.
+
+Return ONLY this JSON, nothing else:
+{
+  "eval_design": {
+    "current_coverage":"NONE|MINIMAL|PARTIAL|ADEQUATE",
+    "coverage_gap":"one sentence",
+    "must_test":[{"case":"string","category":"HAPPY PATH|EDGE CASE|FAILURE MODE|ADVERSARIAL","input":"string","expected":"string","pass_condition":"string","fail_signal":"string","references_decision":"string or null"}],
+    "should_test":[{"case":"string","category":"string","what_to_measure":"string"}]
+  }
+}`;
+
+    const res3=await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',headers,
+      body:JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:1500,
+        system:SYSTEM_C,
+        messages:[{role:'user',content:`Requirement: "${req}"\n\nReturn ONLY the JSON object.`}]
+      })
+    });
+    if(!res3.ok){const e=await res3.json().catch(()=>({}));throw new Error(e.error?.message||`API error ${res3.status}`);}
+    const data3=await res3.json();
+    const part3=extractJSON(data3.content?.[0]?.text||'');
+    if(!part3){
+      const preview=(data3.content?.[0]?.text||'').slice(0,400).replace(/</g,'&lt;');
+      showErr(`Eval design parse failed. Preview: ${preview}`);
+      return;
+    }
+
+    // Merge all three parts
+    const parsed={...part1,...part2,...part3};
+    renderResults(parsed);
+  }catch(e){
+    showErr('Error: '+e.message);
+  }finally{
+    clearInterval(ticker);
+    btn.disabled=false;
+    btn.classList.remove('loading');
+    btn.querySelector('span').textContent='Generate Spec →';
+  }
+}
+</script>
+</body>
+</html>
