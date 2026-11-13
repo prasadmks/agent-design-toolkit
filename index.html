@@ -76,6 +76,8 @@ body{background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-
 /* ERROR */
 .err-box{background:var(--red-bg);border:1px solid var(--red-bd);border-radius:4px;padding:.65rem .875rem;font-family:'DM Mono',monospace;font-size:11px;color:var(--red);margin-bottom:1rem;display:none;}
 .err-box.show{display:block;}
+.notice-box{background:var(--amber-bg);border:1px solid var(--amber-bd);border-radius:4px;padding:.65rem .875rem;font-family:'DM Mono',monospace;font-size:11px;color:var(--amber);margin-bottom:1rem;display:none;}
+.notice-box.show{display:block;}
 
 /* RESULTS */
 .results{display:none;}
@@ -272,6 +274,7 @@ body{background:var(--bg);color:var(--ink);font-family:'DM Sans',system-ui,sans-
   </div>
 
   <div class="err-box" id="errBox"></div>
+  <div class="notice-box" id="noticeBox"></div>
 
   <div class="results" id="results">
 
@@ -758,6 +761,43 @@ function decHTML(dec,type){
   </div>`;
 }
 
+const PINNED_MODEL='claude-sonnet-5-5';
+let activeModel=PINNED_MODEL;
+
+async function newestSonnet(url,headers){
+  const r=await fetch(url.replace(/messages$/,'models?limit=100'),{headers});
+  if(!r.ok) return null;
+  const d=await r.json();
+  const sonnets=(d.data||[]).filter(m=>m.id.startsWith('claude-sonnet-'));
+  sonnets.sort((a,b)=>(b.created_at||'').localeCompare(a.created_at||''));
+  return sonnets[0]?.id||null;
+}
+
+// Uses the pinned model; if it has been retired, falls back to the newest Sonnet and says so.
+async function callModel(url,headers,body){
+  const send=()=>fetch(url,{method:'POST',headers,body:JSON.stringify({...body,model:activeModel})});
+  let res=await send();
+  if(res.status===404&&activeModel===PINNED_MODEL){
+    const e=await res.clone().json().catch(()=>({}));
+    if(e.error?.type==='not_found_error'&&/model/i.test(e.error.message||'')){
+      const next=await newestSonnet(url,headers);
+      if(next&&next!==PINNED_MODEL){
+        activeModel=next;
+        const msg=`Note: the pinned model (${PINNED_MODEL}) has been retired. This spec was generated with ${next} instead. Results may differ from the tested version.`;
+        const el=document.getElementById('noticeBox'); el.textContent=msg; el.classList.add('show');
+        console.warn(msg);
+        res=await send();
+      }
+    }
+  }
+  return res;
+}
+
+function textOf(data){
+  if(data.stop_reason==='max_tokens') throw new Error('Response hit the max_tokens limit and was cut off. Raise max_tokens and try again.');
+  return (data.content||[]).filter(b=>b.type==='text').map(b=>b.text).join('');
+}
+
 function extractJSON(text){
   // Strategy 1: strip code fences then parse
   const stripped=text.replace(/```json\s*/gi,'').replace(/```\s*/g,'').trim();
@@ -829,20 +869,16 @@ Return ONLY this JSON structure, nothing else:
   }
 }`;
 
-    const res1=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers,
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:2500,
-        system:SYSTEM_A,
-        messages:[{role:'user',content:`Requirement: "${req}"\n\nReturn ONLY the JSON object.`}]
-      })
+    const res1=await callModel('https://api.anthropic.com/v1/messages',headers,{
+      max_tokens:16000,
+      system:SYSTEM_A,
+      messages:[{role:'user',content:`Requirement: "${req}"\n\nReturn ONLY the JSON object.`}]
     });
     if(!res1.ok){const e=await res1.json().catch(()=>({}));throw new Error(e.error?.message||`API error ${res1.status}`);}
     const data1=await res1.json();
-    const part1=extractJSON(data1.content?.[0]?.text||'');
+    const part1=extractJSON(textOf(data1));
     if(!part1){
-      const preview=(data1.content?.[0]?.text||'').slice(0,400).replace(/</g,'&lt;');
+      const preview=(textOf(data1)).slice(0,400).replace(/</g,'&lt;');
       showErr(`Part 1 parse failed. Preview: ${preview}`);
       return;
     }
@@ -857,20 +893,16 @@ Return ONLY this JSON, nothing else:
   "logging_schema": {"event_name":"string","fields":[{"name":"string","type":"string","note":"string"}],"retention":"string","key_queries":[{"who":"string","query":"string"}],"dedup_logic":"string"}
 }`;
 
-    const res2=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers,
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:2500,
-        system:SYSTEM_B,
-        messages:[{role:'user',content:`Requirement: "${req}"\n\nReturn ONLY the JSON object.`}]
-      })
+    const res2=await callModel('https://api.anthropic.com/v1/messages',headers,{
+      max_tokens:20000,
+      system:SYSTEM_B,
+      messages:[{role:'user',content:`Requirement: "${req}"\n\nReturn ONLY the JSON object.`}]
     });
     if(!res2.ok){const e=await res2.json().catch(()=>({}));throw new Error(e.error?.message||`API error ${res2.status}`);}
     const data2=await res2.json();
-    const part2=extractJSON(data2.content?.[0]?.text||'');
+    const part2=extractJSON(textOf(data2));
     if(!part2){
-      const preview=(data2.content?.[0]?.text||'').slice(0,400).replace(/</g,'&lt;');
+      const preview=(textOf(data2)).slice(0,400).replace(/</g,'&lt;');
       showErr(`Tool contracts parse failed. Preview: ${preview}`);
       return;
     }
@@ -889,20 +921,16 @@ Return ONLY this JSON, nothing else:
   }
 }`;
 
-    const res3=await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',headers,
-      body:JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:1500,
-        system:SYSTEM_C,
-        messages:[{role:'user',content:`Requirement: "${req}"\n\nReturn ONLY the JSON object.`}]
-      })
+    const res3=await callModel('https://api.anthropic.com/v1/messages',headers,{
+      max_tokens:6000,
+      system:SYSTEM_C,
+      messages:[{role:'user',content:`Requirement: "${req}"\n\nReturn ONLY the JSON object.`}]
     });
     if(!res3.ok){const e=await res3.json().catch(()=>({}));throw new Error(e.error?.message||`API error ${res3.status}`);}
     const data3=await res3.json();
-    const part3=extractJSON(data3.content?.[0]?.text||'');
+    const part3=extractJSON(textOf(data3));
     if(!part3){
-      const preview=(data3.content?.[0]?.text||'').slice(0,400).replace(/</g,'&lt;');
+      const preview=(textOf(data3)).slice(0,400).replace(/</g,'&lt;');
       showErr(`Eval design parse failed. Preview: ${preview}`);
       return;
     }
